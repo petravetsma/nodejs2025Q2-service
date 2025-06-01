@@ -1,26 +1,90 @@
 import { Injectable } from '@nestjs/common';
-import { CreateTrackDto } from './dto/create-track.dto';
-import { UpdateTrackDto } from './dto/update-track.dto';
+import { plainToInstance } from 'class-transformer';
+import { db } from 'src/common/db';
+import {
+  InvalidUUIDException,
+  MissingFieldsException,
+  TrackNotFoundException,
+} from 'src/common/exception';
+import { CreateTrackDto } from 'src/track/dto/create-track.dto';
+import { TrackResponseDto } from 'src/track/dto/track-response.dto';
+import { UpdateTrackDto } from 'src/track/dto/update-track.dto';
+import { Track } from 'src/track/entities/track.entity';
+import { v4 as uuid, validate } from 'uuid';
 
 @Injectable()
 export class TrackService {
   create(createTrackDto: CreateTrackDto) {
-    return 'This action adds a new track';
+    if (!createTrackDto.name || createTrackDto.duration === undefined) {
+      throw MissingFieldsException();
+    }
+    const track = new Track();
+    track.name = createTrackDto.name;
+    track.duration = createTrackDto.duration;
+    track.id = uuid();
+    track.albumId = createTrackDto.albumId;
+    track.artistId = createTrackDto.artistId;
+
+    db.tracks.push(track);
+
+    return plainToInstance(TrackResponseDto, track);
   }
 
-  findAll() {
-    return `This action returns all track`;
+  findAll(): Track[] {
+    return plainToInstance(TrackResponseDto, db.tracks);
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} track`;
+  findOne(id: string) {
+    if (!validate(id)) {
+      throw InvalidUUIDException();
+    }
+    const track = db.tracks.filter((track: Track) => track.id === id)[0];
+
+    if (!track) {
+      throw TrackNotFoundException();
+    }
+
+    return plainToInstance(TrackResponseDto, track);
   }
 
-  update(id: number, updateTrackDto: UpdateTrackDto) {
-    return `This action updates a #${id} track`;
+  update(id: string, updateTrackDto: UpdateTrackDto) {
+    if (!updateTrackDto.name || updateTrackDto.duration === undefined) {
+      throw MissingFieldsException();
+    }
+
+    if (!validate(id)) {
+      throw InvalidUUIDException();
+    }
+    const trackId = db.tracks.findIndex((track) => track.id === id);
+
+    if (trackId === -1) {
+      throw TrackNotFoundException();
+    }
+
+    const track: Track = db.tracks[trackId];
+
+    track.name = updateTrackDto.name;
+    track.duration = updateTrackDto.duration;
+
+    if (updateTrackDto.albumId) {
+      track.albumId = updateTrackDto.albumId;
+    }
+
+    if (updateTrackDto.artistId) {
+      track.artistId = updateTrackDto.artistId;
+    }
+
+    return plainToInstance(TrackResponseDto, track);
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} track`;
+  remove(id: string) {
+    if (!validate(id)) {
+      throw InvalidUUIDException();
+    }
+    const trackId = db.tracks.findIndex((track) => track.id === id);
+    if (trackId === -1) {
+      throw TrackNotFoundException();
+    }
+    db.tracks = db.tracks.filter((track) => track.id !== id);
   }
 }

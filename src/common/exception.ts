@@ -10,6 +10,9 @@ export const InvalidUUIDException = () =>
 export const UserNotFoundException = () =>
   new NotFoundException('User not found');
 
+export const TrackNotFoundException = () =>
+  new NotFoundException('Track not found');
+
 export const MissingFieldsException = () =>
   new BadRequestException('Missing required fields');
 
