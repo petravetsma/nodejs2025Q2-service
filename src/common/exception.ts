@@ -13,6 +13,9 @@ export const UserNotFoundException = () =>
 export const TrackNotFoundException = () =>
   new NotFoundException('Track not found');
 
+export const ArtistNotFoundException = () =>
+  new NotFoundException('Artist not found');
+
 export const MissingFieldsException = () =>
   new BadRequestException('Missing required fields');
 
