@@ -12,9 +12,9 @@ import { UpdateAlbumDto } from 'src/album/dto/update-album.dto';
 import { Album } from 'src/album/entities/album.entity';
 import { v4 as uuid, validate } from 'uuid';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
-import { ArtistDeleteEvent } from 'src/artist/artist.service';
+import { ARTIST_DELETE_EVENT } from 'src/artist/artist.service';
 
-export const AlbumDeleteEvent = 'album.delete' as const;
+export const ALBUM_DELETE_EVENT = 'album.delete' as const;
 
 @Injectable()
 export class AlbumService {
@@ -89,11 +89,11 @@ export class AlbumService {
     if (albumId === -1) {
       throw AlbumNotFoundException();
     }
-    this.emitter.emit(AlbumDeleteEvent, id);
+    this.emitter.emit(ALBUM_DELETE_EVENT, id);
     db.albums = db.albums.filter((album) => album.id !== id);
   }
 
-  @OnEvent(ArtistDeleteEvent)
+  @OnEvent(ARTIST_DELETE_EVENT)
   onArtistDelete(artistId: string) {
     db.albums.forEach((album: Album) => {
       if (album.artistId === artistId) {

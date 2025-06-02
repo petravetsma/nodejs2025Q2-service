@@ -13,7 +13,7 @@ import { Artist } from 'src/artist/entities/artist.entity';
 import { v4 as uuid, validate } from 'uuid';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 
-export const ArtistDeleteEvent = 'artist.delete' as const;
+export const ARTIST_DELETE_EVENT = 'artist.delete' as const;
 @Injectable()
 export class ArtistService {
   emitter: EventEmitter2;
@@ -86,7 +86,7 @@ export class ArtistService {
     if (artistId === -1) {
       throw ArtistNotFoundException();
     }
-    this.emitter.emit(ArtistDeleteEvent, id);
+    this.emitter.emit(ARTIST_DELETE_EVENT, id);
     db.artists = db.artists.filter((artist) => artist.id !== id);
   }
 }

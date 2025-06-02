@@ -27,4 +27,10 @@ export const BadOldPasswordException = () =>
   new ForbiddenException('Invalid old password');
 
 export const UnprocessableTrackException = () =>
-  new UnprocessableEntityException('Track not found');
+  new UnprocessableEntityException('Unrpcessable track');
+
+export const UnprocessableArtistException = () =>
+  new UnprocessableEntityException('Unrpcessable artist');
+
+export const UnprocessableAlbumException = () =>
+  new UnprocessableEntityException('Unrpcessable album');

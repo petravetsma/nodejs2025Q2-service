@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { OnEvent } from '@nestjs/event-emitter';
+import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import { plainToInstance } from 'class-transformer';
-import { AlbumDeleteEvent } from 'src/album/album.service';
-import { ArtistDeleteEvent } from 'src/artist/artist.service';
+import { ALBUM_DELETE_EVENT } from 'src/album/album.service';
+import { ARTIST_DELETE_EVENT } from 'src/artist/artist.service';
 import { db } from 'src/common/db';
 import {
   InvalidUUIDException,
@@ -15,8 +15,15 @@ import { UpdateTrackDto } from 'src/track/dto/update-track.dto';
 import { Track } from 'src/track/entities/track.entity';
 import { v4 as uuid, validate } from 'uuid';
 
+export const TRACK_DELETE_EVENT = 'track.delete' as const;
+
 @Injectable()
 export class TrackService {
+  emitter: EventEmitter2;
+
+  constructor(emitter: EventEmitter2) {
+    this.emitter = emitter;
+  }
   create(createTrackDto: CreateTrackDto) {
     if (!createTrackDto.name || createTrackDto.duration === undefined) {
       throw MissingFieldsException();
@@ -88,10 +95,11 @@ export class TrackService {
     if (trackId === -1) {
       throw TrackNotFoundException();
     }
+    this.emitter.emit(TRACK_DELETE_EVENT);
     db.tracks = db.tracks.filter((track) => track.id !== id);
   }
 
-  @OnEvent(ArtistDeleteEvent)
+  @OnEvent(ARTIST_DELETE_EVENT)
   onArtistDelete(artistId: string) {
     db.tracks.forEach((track: Track) => {
       if (track.artistId === artistId) {
@@ -100,7 +108,7 @@ export class TrackService {
     });
   }
 
-  @OnEvent(AlbumDeleteEvent)
+  @OnEvent(ALBUM_DELETE_EVENT)
   onAlbumDelete(albumId: string) {
     db.tracks.forEach((track: Track) => {
       if (track.albumId === albumId) {

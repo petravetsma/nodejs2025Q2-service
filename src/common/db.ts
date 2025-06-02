@@ -18,8 +18,8 @@ export const db: DB = {
   artists: [],
   albums: [],
   favorites: {
-    artists: [],
-    albums: [],
-    tracks: [],
+    artists: new Set(),
+    albums: new Set(),
+    tracks: new Set(),
   },
 };
