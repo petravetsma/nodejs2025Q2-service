@@ -1,5 +1,8 @@
 import { Injectable } from '@nestjs/common';
+import { OnEvent } from '@nestjs/event-emitter';
 import { plainToInstance } from 'class-transformer';
+import { AlbumDeleteEvent } from 'src/album/album.service';
+import { ArtistDeleteEvent } from 'src/artist/artist.service';
 import { db } from 'src/common/db';
 import {
   InvalidUUIDException,
@@ -86,5 +89,23 @@ export class TrackService {
       throw TrackNotFoundException();
     }
     db.tracks = db.tracks.filter((track) => track.id !== id);
+  }
+
+  @OnEvent(ArtistDeleteEvent)
+  onArtistDelete(artistId: string) {
+    db.tracks.forEach((track: Track) => {
+      if (track.artistId === artistId) {
+        track.artistId = null;
+      }
+    });
+  }
+
+  @OnEvent(AlbumDeleteEvent)
+  onAlbumDelete(albumId: string) {
+    db.tracks.forEach((track: Track) => {
+      if (track.albumId === albumId) {
+        track.albumId = null;
+      }
+    });
   }
 }

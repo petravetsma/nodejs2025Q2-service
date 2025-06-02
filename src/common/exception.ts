@@ -2,6 +2,7 @@ import {
   BadRequestException,
   NotFoundException,
   ForbiddenException,
+  UnprocessableEntityException,
 } from '@nestjs/common';
 
 export const InvalidUUIDException = () =>
@@ -16,8 +17,14 @@ export const TrackNotFoundException = () =>
 export const ArtistNotFoundException = () =>
   new NotFoundException('Artist not found');
 
+export const AlbumNotFoundException = () =>
+  new NotFoundException('Album not found');
+
 export const MissingFieldsException = () =>
   new BadRequestException('Missing required fields');
 
 export const BadOldPasswordException = () =>
   new ForbiddenException('Invalid old password');
+
+export const UnprocessableTrackException = () =>
+  new UnprocessableEntityException('Track not found');
