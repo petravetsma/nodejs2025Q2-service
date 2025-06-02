@@ -17,6 +17,10 @@ git clone {repository URL}
 npm install
 ```
 
+## Create .env file
+
+Copy file `.env.example` as `.env` and set custom port if you wish.
+
 ## Running application
 
 ```
