@@ -3,15 +3,15 @@ import { plainToInstance } from 'class-transformer';
 import { db } from 'src/common/db';
 import {
   BadOldPasswordException,
-  InvalidUUIDException,
   MissingFieldsException,
   UserNotFoundException,
 } from 'src/common/exception';
+import { uuidValidator } from 'src/common/thrower';
 import { CreateUserDto } from 'src/user/dto/create-user.dto';
 import { UpdatePasswordDto } from 'src/user/dto/update-password.dto';
 import { UserResponseDto } from 'src/user/dto/update-response-dto';
 import { User } from 'src/user/entities/user.entity';
-import { v4 as uuid, validate } from 'uuid';
+import { v4 as uuid } from 'uuid';
 
 @Injectable()
 export class UserService {
@@ -38,9 +38,7 @@ export class UserService {
   }
 
   findOne(id: string) {
-    if (!validate(id)) {
-      throw InvalidUUIDException();
-    }
+    uuidValidator(id);
     const user = db.users.filter((user: User) => user.id === id)[0];
 
     if (!user) {
@@ -58,9 +56,7 @@ export class UserService {
       throw MissingFieldsException();
     }
 
-    if (!validate(id)) {
-      throw InvalidUUIDException();
-    }
+    uuidValidator(id);
     const userId = db.users.findIndex((user) => user.id === id);
 
     if (userId === -1) {
@@ -80,9 +76,7 @@ export class UserService {
   }
 
   remove(id: string) {
-    if (!validate(id)) {
-      throw InvalidUUIDException();
-    }
+    uuidValidator(id);
     const userId = db.users.findIndex((user) => user.id === id);
     if (userId === -1) {
       throw UserNotFoundException();

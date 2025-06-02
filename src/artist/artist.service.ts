@@ -1,17 +1,17 @@
 import { Injectable } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { plainToInstance } from 'class-transformer';
-import { db } from 'src/common/db';
-import {
-  InvalidUUIDException,
-  MissingFieldsException,
-  ArtistNotFoundException,
-} from 'src/common/exception';
-import { CreateArtistDto } from 'src/artist/dto/create-artist.dto';
 import { ArtistResponseDto } from 'src/artist/dto/artist-response.dto';
+import { CreateArtistDto } from 'src/artist/dto/create-artist.dto';
 import { UpdateArtistDto } from 'src/artist/dto/update-artist.dto';
 import { Artist } from 'src/artist/entities/artist.entity';
-import { v4 as uuid, validate } from 'uuid';
-import { EventEmitter2 } from '@nestjs/event-emitter';
+import { db } from 'src/common/db';
+import {
+  ArtistNotFoundException,
+  MissingFieldsException,
+} from 'src/common/exception';
+import { uuidValidator } from 'src/common/thrower';
+import { v4 as uuid } from 'uuid';
 
 export const ARTIST_DELETE_EVENT = 'artist.delete' as const;
 @Injectable()
@@ -41,9 +41,7 @@ export class ArtistService {
   }
 
   findOne(id: string) {
-    if (!validate(id)) {
-      throw InvalidUUIDException();
-    }
+    uuidValidator(id);
     const artist = db.artists.filter((artist: Artist) => artist.id === id)[0];
 
     if (!artist) {
@@ -61,9 +59,7 @@ export class ArtistService {
       throw MissingFieldsException();
     }
 
-    if (!validate(id)) {
-      throw InvalidUUIDException();
-    }
+    uuidValidator(id);
     const artistId = db.artists.findIndex((artist) => artist.id === id);
 
     if (artistId === -1) {
@@ -79,9 +75,7 @@ export class ArtistService {
   }
 
   remove(id: string) {
-    if (!validate(id)) {
-      throw InvalidUUIDException();
-    }
+    uuidValidator(id);
     const artistId = db.artists.findIndex((artist) => artist.id === id);
     if (artistId === -1) {
       throw ArtistNotFoundException();

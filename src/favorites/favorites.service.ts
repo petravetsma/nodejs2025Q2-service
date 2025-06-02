@@ -6,14 +6,13 @@ import { db } from 'src/common/db';
 import {
   AlbumNotFoundException,
   ArtistNotFoundException,
-  InvalidUUIDException,
   TrackNotFoundException,
   UnprocessableArtistException,
   UnprocessableTrackException,
 } from 'src/common/exception';
+import { uuidValidator } from 'src/common/thrower';
 import { FavoritesResponseDto } from 'src/favorites/dto/favorites-response.dto';
 import { TRACK_DELETE_EVENT } from 'src/track/track.service';
-import { validate } from 'uuid';
 
 export const FavoritesDeleteEvent = 'favorites.delete' as const;
 
@@ -36,9 +35,7 @@ export class FavoritesService {
   }
 
   addTrackToFavorites(trackId: string) {
-    if (!validate(trackId)) {
-      throw InvalidUUIDException();
-    }
+    uuidValidator(trackId);
 
     const trackIndex = db.tracks.findIndex((track) => track.id === trackId);
 
@@ -50,10 +47,7 @@ export class FavoritesService {
   }
 
   removeTrackFromFavorites(trackId: string) {
-    if (!validate(trackId)) {
-      throw InvalidUUIDException();
-    }
-    console.log(db.favorites.tracks, 'tracks', trackId);
+    uuidValidator(trackId);
     if (!db.favorites.tracks.has(trackId)) {
       throw TrackNotFoundException();
     }
@@ -68,9 +62,7 @@ export class FavoritesService {
   }
 
   addArtistToFavorites(artistId: string) {
-    if (!validate(artistId)) {
-      throw InvalidUUIDException();
-    }
+    uuidValidator(artistId);
     const artistIndex = db.artists.findIndex(
       (artist) => artist.id === artistId,
     );
@@ -83,9 +75,7 @@ export class FavoritesService {
   }
 
   removeArtistFromFavorites(artistId: string) {
-    if (!validate(artistId)) {
-      throw InvalidUUIDException();
-    }
+    uuidValidator(artistId);
     if (!db.favorites.artists.has(artistId)) {
       throw ArtistNotFoundException();
     }
@@ -98,14 +88,12 @@ export class FavoritesService {
     }
 
     throw new InternalServerErrorException(
-      'Track is in favorites but not in tracks',
+      'Artist is in favorites but not in artists',
     );
   }
 
   addAlbumToFavorites(albumId: string) {
-    if (!validate(albumId)) {
-      throw InvalidUUIDException();
-    }
+    uuidValidator(albumId);
     const albumIndex = db.albums.findIndex((album) => album.id === albumId);
 
     if (albumIndex === -1) {
@@ -116,9 +104,7 @@ export class FavoritesService {
   }
 
   removeAlbumFromFavorites(albumId: string) {
-    if (!validate(albumId)) {
-      throw InvalidUUIDException();
-    }
+    uuidValidator(albumId);
     if (!db.favorites.albums.has(albumId)) {
       throw AlbumNotFoundException();
     }

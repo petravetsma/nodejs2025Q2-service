@@ -1,18 +1,18 @@
 import { Injectable } from '@nestjs/common';
+import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import { plainToInstance } from 'class-transformer';
-import { db } from 'src/common/db';
-import {
-  InvalidUUIDException,
-  MissingFieldsException,
-  AlbumNotFoundException,
-} from 'src/common/exception';
-import { CreateAlbumDto } from 'src/album/dto/create-album.dto';
 import { AlbumResponseDto } from 'src/album/dto/album-response.dto';
+import { CreateAlbumDto } from 'src/album/dto/create-album.dto';
 import { UpdateAlbumDto } from 'src/album/dto/update-album.dto';
 import { Album } from 'src/album/entities/album.entity';
-import { v4 as uuid, validate } from 'uuid';
-import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import { ARTIST_DELETE_EVENT } from 'src/artist/artist.service';
+import { db } from 'src/common/db';
+import {
+  AlbumNotFoundException,
+  MissingFieldsException,
+} from 'src/common/exception';
+import { uuidValidator } from 'src/common/thrower';
+import { v4 as uuid } from 'uuid';
 
 export const ALBUM_DELETE_EVENT = 'album.delete' as const;
 
@@ -43,9 +43,7 @@ export class AlbumService {
   }
 
   findOne(id: string) {
-    if (!validate(id)) {
-      throw InvalidUUIDException();
-    }
+    uuidValidator(id);
     const album = db.albums.filter((album: Album) => album.id === id)[0];
 
     if (!album) {
@@ -63,9 +61,7 @@ export class AlbumService {
       throw MissingFieldsException();
     }
 
-    if (!validate(id)) {
-      throw InvalidUUIDException();
-    }
+    uuidValidator(id);
     const albumId = db.albums.findIndex((album) => album.id === id);
 
     if (albumId === -1) {
@@ -82,9 +78,7 @@ export class AlbumService {
   }
 
   remove(id: string) {
-    if (!validate(id)) {
-      throw InvalidUUIDException();
-    }
+    uuidValidator(id);
     const albumId = db.albums.findIndex((album) => album.id === id);
     if (albumId === -1) {
       throw AlbumNotFoundException();

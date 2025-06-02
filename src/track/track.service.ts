@@ -5,15 +5,15 @@ import { ALBUM_DELETE_EVENT } from 'src/album/album.service';
 import { ARTIST_DELETE_EVENT } from 'src/artist/artist.service';
 import { db } from 'src/common/db';
 import {
-  InvalidUUIDException,
   MissingFieldsException,
   TrackNotFoundException,
 } from 'src/common/exception';
+import { uuidValidator } from 'src/common/thrower';
 import { CreateTrackDto } from 'src/track/dto/create-track.dto';
 import { TrackResponseDto } from 'src/track/dto/track-response.dto';
 import { UpdateTrackDto } from 'src/track/dto/update-track.dto';
 import { Track } from 'src/track/entities/track.entity';
-import { v4 as uuid, validate } from 'uuid';
+import { v4 as uuid } from 'uuid';
 
 export const TRACK_DELETE_EVENT = 'track.delete' as const;
 
@@ -45,9 +45,7 @@ export class TrackService {
   }
 
   findOne(id: string) {
-    if (!validate(id)) {
-      throw InvalidUUIDException();
-    }
+    uuidValidator(id);
     const track = db.tracks.filter((track: Track) => track.id === id)[0];
 
     if (!track) {
@@ -62,9 +60,7 @@ export class TrackService {
       throw MissingFieldsException();
     }
 
-    if (!validate(id)) {
-      throw InvalidUUIDException();
-    }
+    uuidValidator(id);
     const trackId = db.tracks.findIndex((track) => track.id === id);
 
     if (trackId === -1) {
@@ -88,9 +84,7 @@ export class TrackService {
   }
 
   remove(id: string) {
-    if (!validate(id)) {
-      throw InvalidUUIDException();
-    }
+    uuidValidator(id);
     const trackId = db.tracks.findIndex((track) => track.id === id);
     if (trackId === -1) {
       throw TrackNotFoundException();
