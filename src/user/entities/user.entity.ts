@@ -1,8 +1,22 @@
+import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+
+@Entity()
 export class User {
-  id: string; // uuid v4
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  @Column('string')
   login: string;
+
+  @Column('string')
   password: string;
-  version: number; // integer number, increments on update
-  createdAt: number; // timestamp of creation
-  updatedAt: number; // timestamp of last update
+
+  @Column('number')
+  version: number;
+
+  @Column('number')
+  createdAt: number;
+
+  @Column('number')
+  updatedAt: number;
 }

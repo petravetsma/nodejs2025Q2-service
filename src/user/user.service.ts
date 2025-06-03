@@ -1,86 +1,38 @@
 import { Injectable } from '@nestjs/common';
-import { plainToInstance } from 'class-transformer';
-import { db } from 'src/common/db';
-import {
-  BadOldPasswordException,
-  MissingFieldsException,
-  UserNotFoundException,
-} from 'src/common/exception';
-import { uuidValidator } from 'src/common/thrower';
-import { CreateUserDto } from 'src/user/dto/create-user.dto';
-import { UpdatePasswordDto } from 'src/user/dto/update-password.dto';
-import { UserResponseDto } from 'src/user/dto/update-response-dto';
+import { InjectRepository } from '@nestjs/typeorm';
+import { UserNotFoundException } from 'src/common/exception';
 import { User } from 'src/user/entities/user.entity';
-import { v4 as uuid } from 'uuid';
+import { Repository } from 'typeorm';
 
 @Injectable()
 export class UserService {
-  create(createUserDto: CreateUserDto) {
-    if (!createUserDto.login || !createUserDto.password) {
-      throw MissingFieldsException();
-    }
-    const user = new User();
-    user.login = createUserDto.login;
-    user.password = createUserDto.password;
-    user.id = uuid();
-    user.version = 1;
-    const now = Date.now();
-    user.createdAt = now;
-    user.updatedAt = now;
+  constructor(
+    @InjectRepository(User)
+    private readonly userRepo: Repository<User>,
+  ) {}
 
-    db.users.push(user);
-
-    return plainToInstance(UserResponseDto, user);
+  async create(data: Partial<User>): Promise<User> {
+    const user = this.userRepo.create(data);
+    return this.userRepo.save(user);
+  }
+  async findAll(): Promise<User[]> {
+    return this.userRepo.find();
   }
 
-  findAll(): User[] {
-    return plainToInstance(UserResponseDto, db.users);
+  async findOne(id: string): Promise<User> {
+    const user = await this.userRepo.findOneBy({ id });
+    if (!user) throw UserNotFoundException();
+    return user;
   }
 
-  findOne(id: string) {
-    uuidValidator(id);
-    const user = db.users.filter((user: User) => user.id === id)[0];
-
-    if (!user) {
-      throw UserNotFoundException();
-    }
-
-    return plainToInstance(UserResponseDto, user);
+  async update(id: string, data: Partial<User>): Promise<User> {
+    await this.findOne(id); // throws if not found
+    await this.userRepo.update(id, data);
+    return this.userRepo.findOneBy({ id });
   }
 
-  update(id: string, updateUserDto: UpdatePasswordDto) {
-    if (
-      updateUserDto.oldPassword === undefined ||
-      updateUserDto.newPassword === undefined
-    ) {
-      throw MissingFieldsException();
-    }
-
-    uuidValidator(id);
-    const userId = db.users.findIndex((user) => user.id === id);
-
-    if (userId === -1) {
-      throw UserNotFoundException();
-    }
-
-    const user: User = db.users[userId];
-
-    if (user.password !== updateUserDto.oldPassword) {
-      throw BadOldPasswordException();
-    }
-    db.users[userId].password = updateUserDto.newPassword;
-    db.users[userId].version++;
-    db.users[userId].updatedAt = Date.now();
-
-    return plainToInstance(UserResponseDto, db.users[userId]);
-  }
-
-  remove(id: string) {
-    uuidValidator(id);
-    const userId = db.users.findIndex((user) => user.id === id);
-    if (userId === -1) {
-      throw UserNotFoundException();
-    }
-    db.users = db.users.filter((user) => user.id !== id);
+  async delete(id: string): Promise<void> {
+    await this.findOne(id); // throws if not found
+    await this.userRepo.delete(id);
   }
 }
