@@ -41,7 +41,7 @@ export class UserService {
 
   async findOne(id: string) {
     uuidValidator(id);
-    const user = await this.userRepo.findOneBy({ id }); // throws if not found
+    const user = await this.userRepo.findOneBy({ id });
 
     if (!user) {
       throw UserNotFoundException();
