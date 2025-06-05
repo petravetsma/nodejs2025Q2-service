@@ -4,15 +4,15 @@ export class Track {
   @PrimaryGeneratedColumn('uuid')
   id: string; // uuid v4
 
-  @Column('string')
+  @Column()
   name: string;
 
-  @Column('string', { nullable: true })
+  @Column({ nullable: true })
   artistId: string | null; // refers to Artist
 
-  @Column('string', { nullable: true })
+  @Column({ nullable: true })
   albumId: string | null; // refers to Album
 
-  @Column('number')
+  @Column()
   duration: number; // integer number
 }

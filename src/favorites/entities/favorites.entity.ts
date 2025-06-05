@@ -1,8 +1,8 @@
-import { Entity, Column } from 'typeorm';
+import { Entity, Column, PrimaryColumn } from 'typeorm';
 
 @Entity()
 export class Favorites {
-  @Column('uuid', { array: true, default: () => 'ARRAY[]::UUID[]' })
+  @PrimaryColumn('uuid', { array: true, default: () => 'ARRAY[]::UUID[]' })
   artists: Set<string>;
 
   @Column('uuid', { array: true, default: () => 'ARRAY[]::UUID[]' })

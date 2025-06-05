@@ -1,22 +1,32 @@
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import { Column, Entity, PrimaryGeneratedColumn, VersionColumn } from 'typeorm';
 
 @Entity()
 export class User {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column('string')
+  @Column()
   login: string;
 
-  @Column('string')
+  @Column()
   password: string;
 
-  @Column('number')
+  @VersionColumn({ default: 1 })
   version: number;
 
-  @Column('number')
+  @Column('bigint', {
+    transformer: {
+      to: (value: number) => value,
+      from: (value: string) => parseInt(value, 10),
+    },
+  })
   createdAt: number;
 
-  @Column('number')
+  @Column('bigint', {
+    transformer: {
+      to: (value: number) => value,
+      from: (value: string) => parseInt(value, 10),
+    },
+  })
   updatedAt: number;
 }
