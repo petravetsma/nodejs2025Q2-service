@@ -1,4 +1,5 @@
-import { PrimaryGeneratedColumn, Column, Entity } from 'typeorm';
+import { Favorites } from 'src/favorites/entities/favorites.entity';
+import { PrimaryGeneratedColumn, Column, Entity, ManyToMany } from 'typeorm';
 @Entity()
 export class Track {
   @PrimaryGeneratedColumn('uuid')
@@ -15,4 +16,7 @@ export class Track {
 
   @Column()
   duration: number; // integer number
+
+  @ManyToMany(() => Favorites, (favorites) => favorites.artists)
+  favorites: Favorites[];
 }

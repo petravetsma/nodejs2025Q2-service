@@ -1,4 +1,5 @@
-import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
+import { Favorites } from 'src/favorites/entities/favorites.entity';
+import { Entity, Column, PrimaryGeneratedColumn, ManyToMany } from 'typeorm';
 
 @Entity()
 export class Artist {
@@ -10,4 +11,7 @@ export class Artist {
 
   @Column()
   grammy: boolean;
+
+  @ManyToMany(() => Favorites, (favorites) => favorites.artists)
+  favorites: Favorites[];
 }

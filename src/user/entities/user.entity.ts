@@ -1,4 +1,11 @@
-import { Column, Entity, PrimaryGeneratedColumn, VersionColumn } from 'typeorm';
+import { Favorites } from 'src/favorites/entities/favorites.entity';
+import {
+  Column,
+  Entity,
+  ManyToMany,
+  PrimaryGeneratedColumn,
+  VersionColumn,
+} from 'typeorm';
 
 @Entity()
 export class User {
@@ -29,4 +36,7 @@ export class User {
     },
   })
   updatedAt: number;
+
+  @ManyToMany(() => Favorites, (favorites) => favorites.artists)
+  favorites: Favorites[];
 }

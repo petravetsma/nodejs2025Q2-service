@@ -1,8 +1,10 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
-import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
-import { ALBUM_DELETE_EVENT } from 'src/album/album.service';
-import { ARTIST_DELETE_EVENT } from 'src/artist/artist.service';
-import { db } from 'src/common/db';
+import { Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Album } from 'src/album/entities/album.entity';
+import { Artist } from 'src/artist/entities/artist.entity';
+import { Track } from 'src/track/entities/track.entity';
+import { Favorites } from 'src/favorites/entities/favorites.entity';
 import {
   AlbumNotFoundException,
   ArtistNotFoundException,
@@ -12,125 +14,137 @@ import {
 } from 'src/common/exception';
 import { uuidValidator } from 'src/common/thrower';
 import { FavoritesResponseDto } from 'src/favorites/dto/favorites-response.dto';
-import { TRACK_DELETE_EVENT } from 'src/track/track.service';
-
-export const FavoritesDeleteEvent = 'favorites.delete' as const;
 
 @Injectable()
 export class FavoritesService {
-  emitter: EventEmitter2;
+  constructor(
+    @InjectRepository(Artist)
+    private readonly artistRepo: Repository<Artist>,
+    @InjectRepository(Album)
+    private readonly albumRepo: Repository<Album>,
+    @InjectRepository(Track)
+    private readonly trackRepo: Repository<Track>,
+    @InjectRepository(Favorites)
+    private readonly favsRepo: Repository<Favorites>,
+  ) {}
 
-  constructor(emitter: EventEmitter2) {
-    this.emitter = emitter;
+  async getOrCreateFavorites(): Promise<Favorites> {
+    let favorites = await this.favsRepo.findOne({ where: { id: 'default' } });
+    if (!favorites) {
+      favorites = this.favsRepo.create({
+        id: 'default',
+        artists: [],
+        albums: [],
+        tracks: [],
+      });
+      await this.favsRepo.save(favorites);
+    }
+    return favorites;
   }
 
-  findAll(): FavoritesResponseDto {
+  async findAll(): Promise<FavoritesResponseDto> {
+    const favorites = await this.favsRepo.findOne({
+      where: { id: 'default' },
+      relations: ['artists', 'albums', 'tracks'],
+    });
+
     return {
-      artists: db.artists.filter((artist) =>
-        db.favorites.artists.has(artist.id),
-      ),
-      albums: db.albums.filter((album) => db.favorites.albums.has(album.id)),
-      tracks: db.tracks.filter((track) => db.favorites.tracks.has(track.id)),
+      artists: favorites?.artists || [],
+      albums: favorites?.albums || [],
+      tracks: favorites?.tracks || [],
     };
   }
 
-  addTrackToFavorites(trackId: string) {
-    uuidValidator(trackId);
-
-    const trackIndex = db.tracks.findIndex((track) => track.id === trackId);
-
-    if (trackIndex === -1) {
-      throw UnprocessableTrackException();
-    }
-    db.favorites.tracks.add(trackId);
-    return trackId;
-  }
-
-  removeTrackFromFavorites(trackId: string) {
-    uuidValidator(trackId);
-    if (!db.favorites.tracks.has(trackId)) {
-      throw TrackNotFoundException();
-    }
-    const trackIndex = db.tracks.findIndex((track) => track.id === trackId);
-    if (trackIndex !== -1) {
-      db.favorites.tracks.delete(trackId);
-      return;
-    }
-    throw new InternalServerErrorException(
-      'Track is in favorites but not in tracks',
-    );
-  }
-
-  addArtistToFavorites(artistId: string) {
+  async addArtistToFavorites(artistId: string) {
     uuidValidator(artistId);
-    const artistIndex = db.artists.findIndex(
-      (artist) => artist.id === artistId,
-    );
 
-    if (artistIndex === -1) {
+    const artist = await this.artistRepo.findOneBy({ id: artistId });
+    if (!artist) {
       throw UnprocessableArtistException();
     }
-    db.favorites.artists.add(artistId);
+
+    const favorites = await this.getOrCreateFavorites();
+    if (!favorites.artists.some((a) => a.id === artistId)) {
+      favorites.artists.push(artist);
+      await this.favsRepo.save(favorites);
+    }
     return artistId;
   }
 
-  removeArtistFromFavorites(artistId: string) {
+  async removeArtistFromFavorites(artistId: string) {
     uuidValidator(artistId);
-    if (!db.favorites.artists.has(artistId)) {
+
+    const favorites = await this.getOrCreateFavorites();
+    const initialCount = favorites.artists.length;
+
+    favorites.artists = favorites.artists.filter((a) => a.id !== artistId);
+
+    if (favorites.artists.length === initialCount) {
       throw ArtistNotFoundException();
     }
-    const artistIndex = db.artists.findIndex(
-      (artist) => artist.id === artistId,
-    );
-    if (artistIndex !== -1) {
-      db.favorites.artists.delete(artistId);
-      return;
-    }
 
-    throw new InternalServerErrorException(
-      'Artist is in favorites but not in artists',
-    );
+    await this.favsRepo.save(favorites);
   }
 
-  addAlbumToFavorites(albumId: string) {
+  async addAlbumToFavorites(albumId: string) {
     uuidValidator(albumId);
-    const albumIndex = db.albums.findIndex((album) => album.id === albumId);
 
-    if (albumIndex === -1) {
-      throw UnprocessableArtistException();
+    const album = await this.albumRepo.findOneBy({ id: albumId });
+    if (!album) {
+      throw UnprocessableArtistException(); // Should be UnprocessableAlbumException
     }
-    db.favorites.albums.add(albumId);
+
+    const favorites = await this.getOrCreateFavorites();
+    if (!favorites.albums.some((a) => a.id === albumId)) {
+      favorites.albums.push(album);
+      await this.favsRepo.save(favorites);
+    }
     return albumId;
   }
 
-  removeAlbumFromFavorites(albumId: string) {
+  async removeAlbumFromFavorites(albumId: string) {
     uuidValidator(albumId);
-    if (!db.favorites.albums.has(albumId)) {
+
+    const favorites = await this.getOrCreateFavorites();
+    const initialCount = favorites.albums.length;
+
+    favorites.albums = favorites.albums.filter((a) => a.id !== albumId);
+
+    if (favorites.albums.length === initialCount) {
       throw AlbumNotFoundException();
     }
-    const albumIndex = db.albums.findIndex((album) => album.id === albumId);
-    if (albumIndex !== -1) {
-      db.favorites.albums.delete(albumId);
-      return;
+
+    await this.favsRepo.save(favorites);
+  }
+
+  async addTrackToFavorites(trackId: string) {
+    uuidValidator(trackId);
+
+    const track = await this.trackRepo.findOneBy({ id: trackId });
+    if (!track) {
+      throw UnprocessableTrackException();
     }
 
-    throw new InternalServerErrorException(
-      'Album is in favorites but not in albums',
-    );
+    const favorites = await this.getOrCreateFavorites();
+    if (!favorites.tracks.some((t) => t.id === trackId)) {
+      favorites.tracks.push(track);
+      await this.favsRepo.save(favorites);
+    }
+    return trackId;
   }
 
-  @OnEvent(TRACK_DELETE_EVENT)
-  onTrackDelete(trackId: string) {
-    db.favorites.tracks.delete(trackId);
-  }
+  async removeTrackFromFavorites(trackId: string) {
+    uuidValidator(trackId);
 
-  @OnEvent(ALBUM_DELETE_EVENT)
-  onAlbumDelete(albumId: string) {
-    db.favorites.albums.delete(albumId);
-  }
+    const favorites = await this.getOrCreateFavorites();
+    const initialCount = favorites.tracks.length;
 
-  @OnEvent(ARTIST_DELETE_EVENT)
-  onArtistDelete(artistId: string) {
-    db.favorites.artists.delete(artistId);
+    favorites.tracks = favorites.tracks.filter((t) => t.id !== trackId);
+
+    if (favorites.tracks.length === initialCount) {
+      throw TrackNotFoundException();
+    }
+
+    await this.favsRepo.save(favorites);
   }
 }

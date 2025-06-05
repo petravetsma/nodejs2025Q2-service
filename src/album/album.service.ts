@@ -43,7 +43,7 @@ export class AlbumService {
     return plainToInstance(AlbumResponseDto, album);
   }
 
-  async findAll(): Promise<Album[]> {
+  async findAll(): Promise<AlbumResponseDto[]> {
     return plainToInstance(AlbumResponseDto, await this.albumRepo.find());
   }
 

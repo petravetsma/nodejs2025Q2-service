@@ -41,7 +41,7 @@ export class ArtistService {
     return plainToInstance(ArtistResponseDto, artist);
   }
 
-  async findAll(): Promise<Artist[]> {
+  async findAll(): Promise<ArtistResponseDto[]> {
     return plainToInstance(ArtistResponseDto, await this.artistRepo.find());
   }
 
