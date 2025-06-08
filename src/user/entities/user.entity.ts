@@ -37,6 +37,6 @@ export class User {
   })
   updatedAt: number;
 
-  @ManyToMany(() => Favorites, (favorites) => favorites.artists)
+  @ManyToMany(() => Favorites, (favorites) => favorites)
   favorites: Favorites[];
 }

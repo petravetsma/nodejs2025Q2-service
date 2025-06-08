@@ -1,9 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import { InjectRepository } from '@nestjs/typeorm';
 import { plainToInstance } from 'class-transformer';
-import { ALBUM_DELETE_EVENT } from 'src/album/album.service';
-import { ARTIST_DELETE_EVENT } from 'src/artist/artist.service';
+import { Album } from 'src/album/entities/album.entity';
+import { Artist } from 'src/artist/entities/artist.entity';
 import {
   MissingFieldsException,
   TrackNotFoundException,
@@ -23,22 +22,33 @@ export class TrackService {
   constructor(
     @InjectRepository(Track)
     private readonly trackRepo: Repository<Track>,
-    emitter: EventEmitter2,
-  ) {
-    this.emitter = emitter;
-  }
-  emitter: EventEmitter2;
+    @InjectRepository(Artist)
+    private readonly artistRepo: Repository<Artist>,
+    @InjectRepository(Album)
+    private readonly albumRepo: Repository<Album>,
+  ) {}
 
   async create(createTrackDto: CreateTrackDto) {
     if (!createTrackDto.name || createTrackDto.duration === undefined) {
       throw MissingFieldsException();
     }
+
+    const artist = createTrackDto.artistId
+      ? await this.artistRepo.findOne({
+          where: { id: createTrackDto.artistId },
+        })
+      : null;
+
+    const album = createTrackDto.albumId
+      ? await this.albumRepo.findOne({ where: { id: createTrackDto.albumId } })
+      : null;
+
     const track = new Track();
     track.name = createTrackDto.name;
     track.duration = createTrackDto.duration;
     track.id = uuid();
-    track.albumId = createTrackDto.albumId;
-    track.artistId = createTrackDto.artistId;
+    track.album = album;
+    track.artist = artist;
 
     await this.trackRepo.save(track);
 
@@ -46,7 +56,8 @@ export class TrackService {
   }
 
   async findAll(): Promise<TrackResponseDto[]> {
-    return plainToInstance(TrackResponseDto, await this.trackRepo.find());
+    const tracks = await this.trackRepo.find();
+    return plainToInstance(TrackResponseDto, tracks);
   }
 
   async findOne(id: string) {
@@ -75,8 +86,17 @@ export class TrackService {
     track.name = updateTrackDto.name;
     track.duration = updateTrackDto.duration;
 
-    track.albumId = updateTrackDto.albumId ?? track.albumId;
-    track.artistId = updateTrackDto.artistId ?? track.artistId;
+    const album = updateTrackDto.albumId
+      ? await this.albumRepo.findOne({ where: { id: updateTrackDto.albumId } })
+      : null;
+
+    track.album = album;
+    const artist = updateTrackDto.artistId
+      ? await this.artistRepo.findOne({
+          where: { id: updateTrackDto.artistId },
+        })
+      : null;
+    track.artist = artist;
 
     await this.trackRepo.save(track);
     return plainToInstance(TrackResponseDto, track);
@@ -88,19 +108,14 @@ export class TrackService {
     if (!track) {
       throw TrackNotFoundException();
     }
-    this.emitter.emit(TRACK_DELETE_EVENT, id);
     await this.trackRepo.delete(id);
   }
 
-  @OnEvent(ARTIST_DELETE_EVENT)
-  async onArtistDelete(artistId: string) {
-    // Update all tracks with matching artistId
-    await this.trackRepo.update({ artistId }, { artistId: null });
-  }
-
-  @OnEvent(ALBUM_DELETE_EVENT)
-  async onAlbumDelete(albumId: string) {
-    // Update all tracks with matching albumId
-    await this.trackRepo.update({ albumId }, { albumId: null });
-  }
+  // public toTrackResponseDto(track: Track): TrackResponseDto {
+  //   return plainToInstance(TrackResponseDto, {
+  //     ...track,
+  //     artistId: track.artist?.id ?? null,
+  //     albumId: track.album?.id ?? null,
+  //   });
+  // }
 }

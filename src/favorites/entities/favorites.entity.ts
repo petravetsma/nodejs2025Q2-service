@@ -1,4 +1,3 @@
-// favorites.entity.ts
 import { Entity, PrimaryColumn, ManyToMany, JoinTable } from 'typeorm';
 import { Artist } from 'src/artist/entities/artist.entity';
 import { Album } from 'src/album/entities/album.entity';

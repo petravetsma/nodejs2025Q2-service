@@ -1,16 +1,32 @@
 services:
   postgres:
     image: postgres:15
-    container_name: postgres_db
+    container_name: postgres
     restart: always
     ports:
-      - "5432:5432"
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: home_library
+      - '5432:5432'
+    env_file:
+      - .env
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - nest-net
+
+  # app:
+  #   build: dist
+  #   container_name: nest-app
+  #   restart: unless-stopped
+  #   ports:
+  #     - '3000:3000'
+  #   depends_on:
+  #     - postgres
+  #   env_file:
+  #     - .env
+  #   networks:
+  #     - nest-net
 
 volumes:
-  pgdata:
+  postgres_data:
+
+networks:
+  nest-net:

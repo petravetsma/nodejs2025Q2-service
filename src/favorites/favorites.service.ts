@@ -1,3 +1,5 @@
+import { AlbumResponseDto } from './../album/dto/album-response.dto';
+import { plainToInstance } from 'class-transformer';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -10,10 +12,13 @@ import {
   ArtistNotFoundException,
   TrackNotFoundException,
   UnprocessableArtistException,
+  UnprocessableAlbumException,
   UnprocessableTrackException,
 } from 'src/common/exception';
 import { uuidValidator } from 'src/common/thrower';
 import { FavoritesResponseDto } from 'src/favorites/dto/favorites-response.dto';
+import { ArtistResponseDto } from 'src/artist/dto/artist-response.dto';
+import { TrackResponseDto } from 'src/track/dto/track-response.dto';
 
 @Injectable()
 export class FavoritesService {
@@ -29,7 +34,17 @@ export class FavoritesService {
   ) {}
 
   async getOrCreateFavorites(): Promise<Favorites> {
-    let favorites = await this.favsRepo.findOne({ where: { id: 'default' } });
+    let favorites = await this.favsRepo.findOne({
+      where: { id: 'default' },
+      relations: [
+        'artists',
+        'albums',
+        'albums.artist',
+        'tracks',
+        'tracks.artist',
+        'tracks.album',
+      ],
+    });
     if (!favorites) {
       favorites = this.favsRepo.create({
         id: 'default',
@@ -38,20 +53,38 @@ export class FavoritesService {
         tracks: [],
       });
       await this.favsRepo.save(favorites);
+      favorites = await this.favsRepo.findOne({
+        where: { id: 'default' },
+        relations: [
+          'artists',
+          'albums',
+          'albums.artist',
+          'tracks',
+          'tracks.artist', // Load artist relation for tracks
+          'tracks.album', // Load album relation for tracks
+        ],
+      });
     }
-    return favorites;
+    return favorites!;
   }
 
   async findAll(): Promise<FavoritesResponseDto> {
     const favorites = await this.favsRepo.findOne({
       where: { id: 'default' },
-      relations: ['artists', 'albums', 'tracks'],
+      relations: [
+        'artists',
+        'albums',
+        'albums.artist',
+        'tracks',
+        'tracks.artist', // Load artist relation for tracks
+        'tracks.album', // Load album relation for tracks
+      ], // Added 'albums.artist
     });
 
     return {
-      artists: favorites?.artists || [],
-      albums: favorites?.albums || [],
-      tracks: favorites?.tracks || [],
+      artists: plainToInstance(ArtistResponseDto, favorites?.artists || []),
+      albums: plainToInstance(AlbumResponseDto, favorites?.albums) || [],
+      tracks: plainToInstance(TrackResponseDto, favorites?.tracks || []),
     };
   }
 
@@ -64,8 +97,8 @@ export class FavoritesService {
     }
 
     const favorites = await this.getOrCreateFavorites();
-    if (!favorites.artists.some((a) => a.id === artistId)) {
-      favorites.artists.push(artist);
+    if (!favorites?.artists.some((a) => a.id === artistId)) {
+      favorites?.artists.push(artist);
       await this.favsRepo.save(favorites);
     }
     return artistId;
@@ -75,7 +108,7 @@ export class FavoritesService {
     uuidValidator(artistId);
 
     const favorites = await this.getOrCreateFavorites();
-    const initialCount = favorites.artists.length;
+    const initialCount = favorites?.artists.length;
 
     favorites.artists = favorites.artists.filter((a) => a.id !== artistId);
 
@@ -89,9 +122,12 @@ export class FavoritesService {
   async addAlbumToFavorites(albumId: string) {
     uuidValidator(albumId);
 
-    const album = await this.albumRepo.findOneBy({ id: albumId });
+    const album = await this.albumRepo.findOne({
+      where: { id: albumId },
+      relations: ['artist'],
+    });
     if (!album) {
-      throw UnprocessableArtistException(); // Should be UnprocessableAlbumException
+      throw UnprocessableAlbumException();
     }
 
     const favorites = await this.getOrCreateFavorites();

@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { EventEmitter2 } from '@nestjs/event-emitter';
 import { InjectRepository } from '@nestjs/typeorm';
 import { plainToInstance } from 'class-transformer';
 import { ArtistResponseDto } from 'src/artist/dto/artist-response.dto';
@@ -14,18 +13,12 @@ import { uuidValidator } from 'src/common/thrower';
 import { Repository } from 'typeorm';
 import { v4 as uuid } from 'uuid';
 
-export const ARTIST_DELETE_EVENT = 'artist.delete' as const;
 @Injectable()
 export class ArtistService {
-  emitter: EventEmitter2;
-
   constructor(
     @InjectRepository(Artist)
     private readonly artistRepo: Repository<Artist>,
-    emitter: EventEmitter2,
-  ) {
-    this.emitter = emitter;
-  }
+  ) {}
 
   async create(createArtistDto: CreateArtistDto) {
     if (!createArtistDto.name || createArtistDto.grammy === undefined) {
@@ -84,7 +77,6 @@ export class ArtistService {
     if (!artist) {
       throw ArtistNotFoundException();
     }
-    this.emitter.emit(ARTIST_DELETE_EVENT, id);
     await this.artistRepo.delete(id);
   }
 }
