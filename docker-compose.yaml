@@ -3,30 +3,33 @@ services:
     image: postgres:15
     container_name: postgres
     restart: always
+    env_file:
+      - .env
     ports:
       - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - postgres_logs:/var/log/postgresql
+    networks:
+      - app-network
+
+  app:
+    build: .
+    depends_on:
+      - postgres
+    restart: always
+    command: npm run start:dev
     env_file:
       - .env
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - .:/usr/src/app
     networks:
-      - nest-net
-
-  # app:
-  #   build: dist
-  #   container_name: nest-app
-  #   restart: unless-stopped
-  #   ports:
-  #     - '3000:3000'
-  #   depends_on:
-  #     - postgres
-  #   env_file:
-  #     - .env
-  #   networks:
-  #     - nest-net
+      - app-network
 
 volumes:
   postgres_data:
+  postgres_logs:
 
 networks:
-  nest-net:
+  app-network:
+    driver: bridge

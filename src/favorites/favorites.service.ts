@@ -53,33 +53,12 @@ export class FavoritesService {
         tracks: [],
       });
       await this.favsRepo.save(favorites);
-      favorites = await this.favsRepo.findOne({
-        where: { id: 'default' },
-        relations: [
-          'artists',
-          'albums',
-          'albums.artist',
-          'tracks',
-          'tracks.artist', // Load artist relation for tracks
-          'tracks.album', // Load album relation for tracks
-        ],
-      });
     }
     return favorites!;
   }
 
   async findAll(): Promise<FavoritesResponseDto> {
-    const favorites = await this.favsRepo.findOne({
-      where: { id: 'default' },
-      relations: [
-        'artists',
-        'albums',
-        'albums.artist',
-        'tracks',
-        'tracks.artist', // Load artist relation for tracks
-        'tracks.album', // Load album relation for tracks
-      ], // Added 'albums.artist
-    });
+    const favorites = await this.getOrCreateFavorites();
 
     return {
       artists: plainToInstance(ArtistResponseDto, favorites?.artists || []),
