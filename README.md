@@ -39,8 +39,9 @@ Install the latest version of npm in your local environment:
 Authenticate your machine to associate it with your Snyk Account:
 `snyk auth`
 
-To scan for vulnerabilities run:
-`snyk monitor --all-projects --org=b23b3c18-dc49-4970-a965-4bb91da00da7`
+To scan for vulnerabilities run
+- base `npm run security:base`
+- advanced `npm run security:advanced`
 
 ## Testing
 
