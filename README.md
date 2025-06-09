@@ -4,6 +4,7 @@
 
 - Git - [Download & Install Git](https://git-scm.com/downloads).
 - Node.js - [Download & Install Node.js](https://nodejs.org/en/download/) and the npm package manager.
+- docker engine or docker desktop - [Download & Install Docker Engine](https://docs.docker.com/engine/install/)
 
 ## Downloading
 
@@ -11,25 +12,40 @@
 git clone {repository URL}
 ```
 
+
+## Create .env file
+
+Copy file `.env.example` as `.env` and set custom port if you wish.
+
+
 ## Installing NPM modules
 
 ```
 npm install
 ```
 
-## Create .env file
 
-Copy file `.env.example` as `.env` and set custom port if you wish.
-
-## Running application
+## Run docker container
 
 ```
-npm start
+docker compose up --build
 ```
 
 After starting the app on port (4000 as default) you can open
 in your browser OpenAPI documentation by typing http://localhost:4000/doc/.
 For more information about OpenAPI/Swagger please visit https://swagger.io/.
+
+## Running vulnerability tests
+
+Install the latest version of npm in your local environment:
+`npm install -g snyk`
+
+Authenticate your machine to associate it with your Snyk Account:
+`snyk auth`
+
+To scan for vulnerabilities run
+- base `npm run security:base`
+- advanced `npm run security:advanced`
 
 ## Testing
 

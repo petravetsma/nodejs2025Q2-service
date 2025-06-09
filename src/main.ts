@@ -20,7 +20,7 @@ async function bootstrap() {
   SwaggerModule.setup('doc', app, parse(swaggerFile));
 
   const configService = app.get(ConfigService);
-  let port = parseInt(configService.get('PORT'), 10);
+  let port = parseInt(configService.get('APP_PORT'), 10);
   const alternativePort = 4000;
   if (!port) {
     port = alternativePort;

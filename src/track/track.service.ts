@@ -1,9 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
+import { InjectRepository } from '@nestjs/typeorm';
 import { plainToInstance } from 'class-transformer';
-import { ALBUM_DELETE_EVENT } from 'src/album/album.service';
-import { ARTIST_DELETE_EVENT } from 'src/artist/artist.service';
-import { db } from 'src/common/db';
+import { Album } from 'src/album/entities/album.entity';
+import { Artist } from 'src/artist/entities/artist.entity';
 import {
   MissingFieldsException,
   TrackNotFoundException,
@@ -13,40 +12,57 @@ import { CreateTrackDto } from 'src/track/dto/create-track.dto';
 import { TrackResponseDto } from 'src/track/dto/track-response.dto';
 import { UpdateTrackDto } from 'src/track/dto/update-track.dto';
 import { Track } from 'src/track/entities/track.entity';
+import { Repository } from 'typeorm';
 import { v4 as uuid } from 'uuid';
 
 export const TRACK_DELETE_EVENT = 'track.delete' as const;
 
 @Injectable()
 export class TrackService {
-  emitter: EventEmitter2;
+  constructor(
+    @InjectRepository(Track)
+    private readonly trackRepo: Repository<Track>,
+    @InjectRepository(Artist)
+    private readonly artistRepo: Repository<Artist>,
+    @InjectRepository(Album)
+    private readonly albumRepo: Repository<Album>,
+  ) {}
 
-  constructor(emitter: EventEmitter2) {
-    this.emitter = emitter;
-  }
-  create(createTrackDto: CreateTrackDto) {
+  async create(createTrackDto: CreateTrackDto) {
     if (!createTrackDto.name || createTrackDto.duration === undefined) {
       throw MissingFieldsException();
     }
+
+    const artist = createTrackDto.artistId
+      ? await this.artistRepo.findOne({
+          where: { id: createTrackDto.artistId },
+        })
+      : null;
+
+    const album = createTrackDto.albumId
+      ? await this.albumRepo.findOne({ where: { id: createTrackDto.albumId } })
+      : null;
+
     const track = new Track();
     track.name = createTrackDto.name;
     track.duration = createTrackDto.duration;
     track.id = uuid();
-    track.albumId = createTrackDto.albumId;
-    track.artistId = createTrackDto.artistId;
+    track.album = album;
+    track.artist = artist;
 
-    db.tracks.push(track);
+    await this.trackRepo.save(track);
 
     return plainToInstance(TrackResponseDto, track);
   }
 
-  findAll(): Track[] {
-    return plainToInstance(TrackResponseDto, db.tracks);
+  async findAll(): Promise<TrackResponseDto[]> {
+    const tracks = await this.trackRepo.find();
+    return plainToInstance(TrackResponseDto, tracks);
   }
 
-  findOne(id: string) {
+  async findOne(id: string) {
     uuidValidator(id);
-    const track = db.tracks.filter((track: Track) => track.id === id)[0];
+    const track = await this.trackRepo.findOneBy({ id });
 
     if (!track) {
       throw TrackNotFoundException();
@@ -55,59 +71,51 @@ export class TrackService {
     return plainToInstance(TrackResponseDto, track);
   }
 
-  update(id: string, updateTrackDto: UpdateTrackDto) {
+  async update(id: string, updateTrackDto: UpdateTrackDto) {
     if (!updateTrackDto.name || updateTrackDto.duration === undefined) {
       throw MissingFieldsException();
     }
 
     uuidValidator(id);
-    const trackId = db.tracks.findIndex((track) => track.id === id);
+    const track = await this.trackRepo.findOneBy({ id });
 
-    if (trackId === -1) {
+    if (!track) {
       throw TrackNotFoundException();
     }
-
-    const track: Track = db.tracks[trackId];
 
     track.name = updateTrackDto.name;
     track.duration = updateTrackDto.duration;
 
-    if (updateTrackDto.albumId) {
-      track.albumId = updateTrackDto.albumId;
-    }
+    const album = updateTrackDto.albumId
+      ? await this.albumRepo.findOne({ where: { id: updateTrackDto.albumId } })
+      : null;
 
-    if (updateTrackDto.artistId) {
-      track.artistId = updateTrackDto.artistId;
-    }
+    track.album = album;
+    const artist = updateTrackDto.artistId
+      ? await this.artistRepo.findOne({
+          where: { id: updateTrackDto.artistId },
+        })
+      : null;
+    track.artist = artist;
 
+    await this.trackRepo.save(track);
     return plainToInstance(TrackResponseDto, track);
   }
 
-  remove(id: string) {
+  async remove(id: string) {
     uuidValidator(id);
-    const trackId = db.tracks.findIndex((track) => track.id === id);
-    if (trackId === -1) {
+    const track = await this.trackRepo.findOneBy({ id });
+    if (!track) {
       throw TrackNotFoundException();
     }
-    this.emitter.emit(TRACK_DELETE_EVENT);
-    db.tracks = db.tracks.filter((track) => track.id !== id);
+    await this.trackRepo.delete(id);
   }
 
-  @OnEvent(ARTIST_DELETE_EVENT)
-  onArtistDelete(artistId: string) {
-    db.tracks.forEach((track: Track) => {
-      if (track.artistId === artistId) {
-        track.artistId = null;
-      }
-    });
-  }
-
-  @OnEvent(ALBUM_DELETE_EVENT)
-  onAlbumDelete(albumId: string) {
-    db.tracks.forEach((track: Track) => {
-      if (track.albumId === albumId) {
-        track.albumId = null;
-      }
-    });
-  }
+  // public toTrackResponseDto(track: Track): TrackResponseDto {
+  //   return plainToInstance(TrackResponseDto, {
+  //     ...track,
+  //     artistId: track.artist?.id ?? null,
+  //     albumId: track.album?.id ?? null,
+  //   });
+  // }
 }

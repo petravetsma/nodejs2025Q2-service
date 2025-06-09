@@ -1,50 +1,59 @@
 import { Injectable } from '@nestjs/common';
-import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
+import { InjectRepository } from '@nestjs/typeorm';
 import { plainToInstance } from 'class-transformer';
 import { AlbumResponseDto } from 'src/album/dto/album-response.dto';
 import { CreateAlbumDto } from 'src/album/dto/create-album.dto';
 import { UpdateAlbumDto } from 'src/album/dto/update-album.dto';
 import { Album } from 'src/album/entities/album.entity';
-import { ARTIST_DELETE_EVENT } from 'src/artist/artist.service';
-import { db } from 'src/common/db';
+import { Artist } from 'src/artist/entities/artist.entity';
 import {
   AlbumNotFoundException,
   MissingFieldsException,
 } from 'src/common/exception';
 import { uuidValidator } from 'src/common/thrower';
+import { Repository } from 'typeorm';
 import { v4 as uuid } from 'uuid';
-
-export const ALBUM_DELETE_EVENT = 'album.delete' as const;
 
 @Injectable()
 export class AlbumService {
-  emitter: EventEmitter2;
-
-  constructor(emitter: EventEmitter2) {
-    this.emitter = emitter;
-  }
-  create(createAlbumDto: CreateAlbumDto) {
+  constructor(
+    @InjectRepository(Album)
+    private readonly albumRepo: Repository<Album>,
+    @InjectRepository(Artist)
+    private readonly artistRepo: Repository<Artist>,
+  ) {}
+  async create(createAlbumDto: CreateAlbumDto) {
     if (!createAlbumDto.name || createAlbumDto.year === undefined) {
       throw MissingFieldsException();
     }
+
+    const artist = createAlbumDto.artistId
+      ? await this.artistRepo.findOne({
+          where: { id: createAlbumDto.artistId },
+        })
+      : null;
     const album = new Album();
     album.name = createAlbumDto.name;
     album.year = createAlbumDto.year;
-    album.artistId = createAlbumDto.artistId;
+    album.artist = artist;
     album.id = uuid();
 
-    db.albums.push(album);
+    await this.albumRepo.save(album);
 
     return plainToInstance(AlbumResponseDto, album);
   }
 
-  findAll(): Album[] {
-    return plainToInstance(AlbumResponseDto, db.albums);
+  async findAll(): Promise<AlbumResponseDto[]> {
+    const albums = await this.albumRepo.find({ relations: ['artist'] });
+    return plainToInstance(AlbumResponseDto, albums);
   }
 
-  findOne(id: string) {
+  async findOne(id: string) {
     uuidValidator(id);
-    const album = db.albums.filter((album: Album) => album.id === id)[0];
+    const album = await this.albumRepo.findOne({
+      where: { id },
+      relations: ['artist'], // Load relation
+    });
 
     if (!album) {
       throw AlbumNotFoundException();
@@ -53,7 +62,7 @@ export class AlbumService {
     return plainToInstance(AlbumResponseDto, album);
   }
 
-  update(id: string, updateAlbumDto: UpdateAlbumDto) {
+  async update(id: string, updateAlbumDto: UpdateAlbumDto) {
     if (
       updateAlbumDto.name === undefined ||
       updateAlbumDto.year === undefined
@@ -62,37 +71,41 @@ export class AlbumService {
     }
 
     uuidValidator(id);
-    const albumId = db.albums.findIndex((album) => album.id === id);
+    const album = await this.albumRepo.findOneBy({ id });
 
-    if (albumId === -1) {
+    if (!album) {
       throw AlbumNotFoundException();
     }
-
-    const album: Album = db.albums[albumId];
 
     album.name = updateAlbumDto.name;
     album.year = updateAlbumDto.year;
-    album.artistId = updateAlbumDto.artistId;
 
+    const artist = updateAlbumDto.artistId
+      ? await this.artistRepo.findOne({
+          where: { id: updateAlbumDto.artistId },
+        })
+      : null;
+    album.artist = artist;
+
+    await this.albumRepo.save(album);
     return plainToInstance(AlbumResponseDto, album);
   }
 
-  remove(id: string) {
+  async remove(id: string) {
     uuidValidator(id);
-    const albumId = db.albums.findIndex((album) => album.id === id);
-    if (albumId === -1) {
+    const album = await this.albumRepo.findOneBy({ id });
+    if (!album) {
       throw AlbumNotFoundException();
     }
-    this.emitter.emit(ALBUM_DELETE_EVENT, id);
-    db.albums = db.albums.filter((album) => album.id !== id);
+    await this.albumRepo.delete(id);
   }
 
-  @OnEvent(ARTIST_DELETE_EVENT)
-  onArtistDelete(artistId: string) {
-    db.albums.forEach((album: Album) => {
-      if (album.artistId === artistId) {
-        album.artistId = null;
-      }
-    });
-  }
+  // public toAlbumResponseDto(album: Album): AlbumResponseDto {
+  //   return plainToInstance(AlbumResponseDto, {
+  //     id: album.id,
+  //     name: album.name,
+  //     year: album.year,
+  //     artistId: album.artist ? album.artist.id : null, // Safe access
+  //   });
+  // }
 }
