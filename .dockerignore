@@ -28,6 +28,8 @@ Thumbs.db
 
 # Docker
 Dockerfile
+Dockerfile.db
+Dockerfile.app
 .dockerignore
 
 # Config
