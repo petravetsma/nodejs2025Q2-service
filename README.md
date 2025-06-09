@@ -17,6 +17,14 @@ git clone {repository URL}
 
 Copy file `.env.example` as `.env` and set custom port if you wish.
 
+
+## Installing NPM modules
+
+```
+npm install
+```
+
+
 ## Run docker container
 
 ```
