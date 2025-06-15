@@ -35,18 +35,6 @@ After starting the app on port (4000 as default) you can open
 in your browser OpenAPI documentation by typing http://localhost:4000/doc/.
 For more information about OpenAPI/Swagger please visit https://swagger.io/.
 
-## Running vulnerability tests
-
-Install the latest version of npm in your local environment:
-`npm install -g snyk`
-
-Authenticate your machine to associate it with your Snyk Account:
-`snyk auth`
-
-To scan for vulnerabilities run
-- base `npm run security:base`
-- advanced `npm run security:advanced`
-
 ## Testing
 
 After application running open new terminal and enter:
