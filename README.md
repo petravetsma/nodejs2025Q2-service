@@ -17,6 +17,11 @@ git clone {repository URL}
 
 Copy file `.env.example` as `.env` and set custom port if you wish.
 
+## Run DB in docker container
+
+```
+docker compose up --build
+```
 
 ## Installing NPM modules
 
@@ -24,11 +29,10 @@ Copy file `.env.example` as `.env` and set custom port if you wish.
 npm install
 ```
 
-
-## Run DB in docker container
+## Start app
 
 ```
-docker compose up --build
+npm run start
 ```
 
 After starting the app on port (4000 as default) you can open
