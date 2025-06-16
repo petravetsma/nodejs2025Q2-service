@@ -50,6 +50,16 @@ export class UserService {
     return plainToInstance(UserResponseDto, user);
   }
 
+  async findByLogin(login: string) {
+    const user = await this.userRepo.findOneBy({ login });
+
+    if (!user) {
+      throw UserNotFoundException();
+    }
+
+    return user;
+  }
+
   async update(id: string, updateUserDto: UpdatePasswordDto) {
     if (
       updateUserDto.oldPassword === undefined ||

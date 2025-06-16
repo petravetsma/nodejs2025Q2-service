@@ -1,16 +1,16 @@
 import {
-  Controller,
-  Get,
-  Post,
   Body,
-  Param,
+  Controller,
   Delete,
-  Put,
+  Get,
   HttpCode,
+  Param,
+  Post,
+  Put,
 } from '@nestjs/common';
-import { AlbumService } from './album.service';
 import { CreateAlbumDto } from 'src/album/dto/create-album.dto';
 import { UpdateAlbumDto } from 'src/album/dto/update-album.dto';
+import { AlbumService } from './album.service';
 
 @Controller('album')
 export class AlbumController {
@@ -21,7 +21,6 @@ export class AlbumController {
   create(@Body() createAlbumDto: CreateAlbumDto) {
     return this.albumService.create(createAlbumDto);
   }
-
   @Get()
   findAll() {
     return this.albumService.findAll();
