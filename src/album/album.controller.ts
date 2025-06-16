@@ -1,18 +1,21 @@
 import {
-  Body,
   Controller,
-  Delete,
   Get,
-  HttpCode,
-  Param,
   Post,
+  Body,
+  Param,
+  Delete,
   Put,
+  HttpCode,
+  UseGuards,
 } from '@nestjs/common';
+import { AlbumService } from './album.service';
 import { CreateAlbumDto } from 'src/album/dto/create-album.dto';
 import { UpdateAlbumDto } from 'src/album/dto/update-album.dto';
-import { AlbumService } from './album.service';
+import { JwtAuthGuard } from 'src/auth/jwt/jwt-auth.guard';
 
 @Controller('album')
+@UseGuards(JwtAuthGuard)
 export class AlbumController {
   constructor(private readonly albumService: AlbumService) {}
 
@@ -21,6 +24,7 @@ export class AlbumController {
   create(@Body() createAlbumDto: CreateAlbumDto) {
     return this.albumService.create(createAlbumDto);
   }
+
   @Get()
   findAll() {
     return this.albumService.findAll();

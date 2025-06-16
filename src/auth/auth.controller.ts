@@ -20,8 +20,7 @@ export class AuthController {
     if (!dto.login || !dto.password) {
       throw new BadRequestException('Login and password are required');
     }
-    await this.authService.signup(dto.login, dto.password);
-    return { message: 'User created' };
+    return this.authService.signup(dto.login, dto.password);
   }
 
   @Post('login')
