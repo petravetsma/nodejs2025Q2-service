@@ -1,0 +1,17 @@
+services:
+  postgres:
+    image: postgres:15
+    container_name: postgres_db
+    restart: always
+    ports:
+      - '${POSTGRES_HOST_PORT}:${POSTGRES_CONTAINER_PORT}'
+    env_file:
+      - .env
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - postgres_logs:/var/log/postgresql
+
+
+volumes:
+  postgres_data:
+  postgres_logs:

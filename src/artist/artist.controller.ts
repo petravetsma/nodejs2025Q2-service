@@ -1,0 +1,48 @@
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Delete,
+  Put,
+  HttpCode,
+  UseGuards,
+} from '@nestjs/common';
+import { ArtistService } from './artist.service';
+import { CreateArtistDto } from 'src/artist/dto/create-artist.dto';
+import { UpdateArtistDto } from 'src/artist/dto/update-artist.dto';
+import { JwtAuthGuard } from 'src/auth/jwt/jwt-auth.guard';
+
+@Controller('artist')
+@UseGuards(JwtAuthGuard)
+export class ArtistController {
+  constructor(private readonly artistService: ArtistService) {}
+
+  @Post()
+  @HttpCode(201)
+  create(@Body() createArtistDto: CreateArtistDto) {
+    return this.artistService.create(createArtistDto);
+  }
+
+  @Get()
+  findAll() {
+    return this.artistService.findAll();
+  }
+
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.artistService.findOne(id);
+  }
+
+  @Put(':id')
+  update(@Param('id') id: string, @Body() updateArtistDto: UpdateArtistDto) {
+    return this.artistService.update(id, updateArtistDto);
+  }
+
+  @Delete(':id')
+  @HttpCode(204)
+  remove(@Param('id') id: string) {
+    return this.artistService.remove(id);
+  }
+}
